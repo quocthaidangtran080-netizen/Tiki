@@ -1,0 +1,605 @@
+-- LocalScript trong StarterPlayerScripts hoặc Executor
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Camera = Workspace.CurrentCamera
+
+local ParentGui = (gethui and gethui()) or CoreGui or LocalPlayer:WaitForChild("PlayerGui")
+
+-- Dọn dẹp giao diện cũ nếu có
+if ParentGui:FindFirstChild("BenemHubCompactUI") then
+    ParentGui.BenemHubCompactUI:Destroy()
+end
+if PlayerGui and PlayerGui:FindFirstChild("KaxiClickRotateMenu") then
+	PlayerGui.KaxiClickRotateMenu:Destroy()
+end
+if PlayerGui and PlayerGui:FindFirstChild("KaxiAimLockGui") then
+	PlayerGui.KaxiAimLockGui:Destroy()
+end
+
+-- ========================================================
+-- BENEM UI - MAIN INTERFACE & TOGGLE SWITCH
+-- ========================================================
+
+-- 1. SCREEN GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BenemHubCompactUI"
+ScreenGui.Parent = ParentGui
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+
+-- 2. MAIN FRAME
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 520, 0, 360)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Visible = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 18)
+MainCorner.Parent = MainFrame
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(0, 150, 255)
+MainStroke.Thickness = 2
+MainStroke.Parent = MainFrame
+
+-- BACKGROUND IMAGE
+local BackgroundImage = Instance.new("ImageLabel")
+BackgroundImage.Name = "BackgroundImage"
+BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
+BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
+BackgroundImage.BackgroundTransparency = 1
+BackgroundImage.Image = "rbxthumb://type=Asset&id=82939388625739&w=420&h=420"
+BackgroundImage.ImageTransparency = 0.3
+BackgroundImage.ScaleType = Enum.ScaleType.Crop
+BackgroundImage.Parent = MainFrame
+
+local BackgroundCorner = Instance.new("UICorner")
+BackgroundCorner.CornerRadius = UDim.new(0, 18)
+BackgroundCorner.Parent = BackgroundImage
+
+-- 3. TOP BAR
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(1, 0, 0, 36)
+TopBar.BackgroundTransparency = 1
+TopBar.Parent = MainFrame
+
+local MoveButton = Instance.new("ImageButton")
+MoveButton.Name = "MoveButton"
+MoveButton.Size = UDim2.new(0, 26, 0, 26)
+MoveButton.Position = UDim2.new(0, 10, 0.5, -13)
+MoveButton.BackgroundTransparency = 1
+MoveButton.Image = "rbxthumb://type=Asset&id=93610124377677&w=150&h=150"
+MoveButton.Parent = TopBar
+
+-- Chữ BENEM 7 màu ở góc trái TopBar
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Name = "TitleLabel"
+TitleLabel.Size = UDim2.new(0, 120, 1, 0)
+TitleLabel.Position = UDim2.new(0, 42, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "BENEM"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 14
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = TopBar
+
+-- Hiệu ứng chạy 7 màu (Rainbow) cho chữ BENEM
+RunService.RenderStepped:Connect(function()
+    local hue = (tick() % 5) / 5
+    TitleLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
+end)
+
+-- Nút thu nhỏ / Phóng to (-)
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Name = "MinimizeButton"
+MinimizeBtn.Size = UDim2.new(0, 26, 0, 26)
+MinimizeBtn.Position = UDim2.new(1, -36, 0.5, -13)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+MinimizeBtn.BackgroundTransparency = 0.5
+MinimizeBtn.Text = "-"
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.TextSize = 16
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.Parent = TopBar
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(1, 0)
+MinCorner.Parent = MinimizeBtn
+
+-- Biểu tượng Máy tính (PC) trên TopBar
+local PCIcon = Instance.new("ImageLabel")
+PCIcon.Name = "PCIcon"
+PCIcon.Size = UDim2.new(0, 22, 0, 22)
+PCIcon.Position = UDim2.new(1, -64, 0.5, -11)
+PCIcon.BackgroundTransparency = 1
+PCIcon.Image = "rbxassetid://6023426915"
+PCIcon.ImageColor3 = Color3.fromRGB(200, 230, 255)
+PCIcon.Parent = TopBar
+
+-- Biểu tượng Điện thoại (Phone) trên TopBar
+local PhoneIcon = Instance.new("ImageLabel")
+PhoneIcon.Name = "PhoneIcon"
+PhoneIcon.Size = UDim2.new(0, 22, 0, 22)
+PhoneIcon.Position = UDim2.new(1, -92, 0.5, -11)
+PhoneIcon.BackgroundTransparency = 1
+PhoneIcon.Image = "rbxassetid://6023426892"
+PhoneIcon.ImageColor3 = Color3.fromRGB(200, 230, 255)
+PhoneIcon.Parent = TopBar
+
+-- 4. KÉO THẢ BẰNG NÚT MOVE
+local dragging, dragInput, dragStart, startPos
+MoveButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+    end
+end)
+MoveButton.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+
+-- 5. CONTAINER HOLDER
+local ContainerHolder = Instance.new("Frame")
+ContainerHolder.Name = "ContainerHolder"
+ContainerHolder.Size = UDim2.new(1, 0, 1, -36)
+ContainerHolder.Position = UDim2.new(0, 0, 0, 36)
+ContainerHolder.BackgroundTransparency = 1
+ContainerHolder.Parent = MainFrame
+
+local isMinimized = false
+MinimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        MainFrame.Size = UDim2.new(0, 200, 0, 36)
+        MainFrame.AnchorPoint = Vector2.new(0.5, 0)
+        MainFrame.Position = UDim2.new(0.5, 0, 0, 10)
+        ContainerHolder.Visible = false
+        BackgroundImage.Visible = false
+        MinimizeBtn.Text = "+"
+        PCIcon.Visible = false
+        PhoneIcon.Visible = false
+        TitleLabel.Visible = true
+    else
+        MainFrame.Size = UDim2.new(0, 520, 0, 360)
+        MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+        MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+        ContainerHolder.Visible = true
+        BackgroundImage.Visible = true
+        MinimizeBtn.Text = "-"
+        PCIcon.Visible = true
+        PhoneIcon.Visible = true
+        TitleLabel.Visible = true
+    end
+end)
+
+-- 6. SIDEBAR
+local Sidebar = Instance.new("Frame")
+Sidebar.Name = "Sidebar"
+Sidebar.Size = UDim2.new(0, 140, 1, 0)
+Sidebar.BackgroundColor3 = Color3.fromRGB(10, 20, 30)
+Sidebar.BackgroundTransparency = 0.3
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = ContainerHolder
+
+local TabList = Instance.new("ScrollingFrame")
+TabList.Size = UDim2.new(1, 0, 1, -50)
+TabList.Position = UDim2.new(0, 0, 0, 10)
+TabList.BackgroundTransparency = 1
+TabList.ScrollBarThickness = 2
+TabList.CanvasSize = UDim2.new(0, 0, 0, 0)
+TabList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+TabList.Parent = Sidebar
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = TabList
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 4)
+
+-- Thanh Profile màu xanh dương ở góc dưới Sidebar
+local UserProfile = Instance.new("Frame")
+UserProfile.Name = "UserProfile"
+UserProfile.Size = UDim2.new(1, -10, 0, 36)
+UserProfile.Position = UDim2.new(0, 5, 1, -42)
+UserProfile.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+UserProfile.BackgroundTransparency = 0.2
+UserProfile.Parent = Sidebar
+
+local ProfileCorner = Instance.new("UICorner")
+ProfileCorner.CornerRadius = UDim.new(0, 6)
+ProfileCorner.Parent = UserProfile
+
+local UserAvatarImage = Instance.new("ImageLabel")
+UserAvatarImage.Name = "UserAvatarImage"
+UserAvatarImage.Size = UDim2.new(0, 26, 0, 26)
+UserAvatarImage.Position = UDim2.new(0, 5, 0.5, -13)
+UserAvatarImage.BackgroundTransparency = 1
+UserAvatarImage.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150"
+UserAvatarImage.ScaleType = Enum.ScaleType.Fit
+UserAvatarImage.Parent = UserProfile
+
+local AvatarCorner = Instance.new("UICorner")
+AvatarCorner.CornerRadius = UDim.new(1, 0)
+AvatarCorner.Parent = UserAvatarImage
+
+local AvatarLabel = Instance.new("TextLabel")
+AvatarLabel.Size = UDim2.new(1, -42, 1, 0)
+AvatarLabel.Position = UDim2.new(0, 36, 0, 0)
+AvatarLabel.BackgroundTransparency = 1
+AvatarLabel.Text = LocalPlayer.Name
+AvatarLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+AvatarLabel.TextSize = 11
+AvatarLabel.Font = Enum.Font.GothamMedium
+AvatarLabel.TextXAlignment = Enum.TextXAlignment.Left
+AvatarLabel.TextTruncate = Enum.TextTruncate.AtEnd
+AvatarLabel.Parent = UserProfile
+
+-- 7. CONTENT AREA & PAGES
+local ContentArea = Instance.new("Frame")
+ContentArea.Name = "ContentArea"
+ContentArea.Size = UDim2.new(1, -150, 1, -16)
+ContentArea.Position = UDim2.new(0, 145, 0, 8)
+ContentArea.BackgroundTransparency = 1
+ContentArea.Parent = ContainerHolder
+
+local Tabs = {}
+local Pages = {}
+
+local function CreatePage(name)
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = name .. "Page"
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.Visible = false
+    Page.ScrollBarThickness = 3
+    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    
+    local Layout = Instance.new("UIListLayout")
+    Layout.Parent = Page
+    Layout.SortOrder = Enum.SortOrder.LayoutOrder
+    Layout.Padding = UDim.new(0, 6)
+    
+    Page.Parent = ContentArea
+    Pages[name] = Page
+    return Page
+end
+
+local function AddTabButton(name)
+    local Page = CreatePage(name)
+
+    local TabBtn = Instance.new("TextButton")
+    TabBtn.Size = UDim2.new(1, -10, 0, 30)
+    TabBtn.Position = UDim2.new(0, 5, 0, 0)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    TabBtn.BackgroundTransparency = 0.9
+    TabBtn.Text = name
+    TabBtn.TextColor3 = Color3.fromRGB(200, 230, 255)
+    TabBtn.TextSize = 12
+    TabBtn.Font = Enum.Font.GothamMedium
+
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 6)
+    BtnCorner.Parent = TabBtn
+
+    TabBtn.Parent = TabList
+
+    TabBtn.MouseButton1Click:Connect(function()
+        for tabName, btn in pairs(Tabs) do
+            btn.BackgroundTransparency = 0.9
+            btn.TextColor3 = Color3.fromRGB(200, 230, 255)
+            if Pages[tabName] then Pages[tabName].Visible = false end
+        end
+        TabBtn.BackgroundTransparency = 0.4
+        TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Page.Visible = true
+    end)
+
+    Tabs[name] = TabBtn
+    return Page
+end
+
+-- Tạo các trang chính
+local pageInfo = AddTabButton("Info")
+local pageOp = AddTabButton("OP strongest")
+local pageExper = AddTabButton("EXPER")
+local pageSetting = AddTabButton("Setting")
+local pageNotCome = AddTabButton("Not come :)")
+
+-- ========================================================
+-- TÍCH HỢP CLICK XOAY / AUTO KILL CỰC NHANH VÀO NÚT "Obirt"
+-- ========================================================
+local isOrbiting = false
+local orbitAngle = 0
+local currentTargetPart = nil
+local currentTargetHum = nil
+
+local function resetTarget()
+	currentTargetPart = nil
+	currentTargetHum = nil
+	if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+		Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+	end
+end
+
+Mouse.Button1Down:Connect(function()
+	if isOrbiting and Mouse.Target then
+		local hitModel = Mouse.Target:FindFirstAncestorOfClass("Model")
+		if hitModel and hitModel:FindFirstChildOfClass("Humanoid") and hitModel ~= LocalPlayer.Character then
+			currentTargetPart = Mouse.Target
+			currentTargetHum = hitModel:FindFirstChildOfClass("Humanoid")
+			if currentTargetHum then
+				Camera.CameraSubject = currentTargetHum
+			end
+		end
+	end
+end)
+
+-- Khung chứa hàng Toggle (Nền đen mờ 0.5)
+local OrbitContainer = Instance.new("Frame")
+OrbitContainer.Name = "OrbitContainer"
+OrbitContainer.Size = UDim2.new(1, 0, 0, 35)
+OrbitContainer.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+OrbitContainer.BackgroundTransparency = 0.5
+OrbitContainer.BorderSizePixel = 0
+OrbitContainer.Parent = pageOp
+
+local OrbitContainerCorner = Instance.new("UICorner")
+OrbitContainerCorner.CornerRadius = UDim.new(0, 6)
+OrbitContainerCorner.Parent = OrbitContainer
+
+local OrbitLabel = Instance.new("TextLabel")
+OrbitLabel.Size = UDim2.new(1, -60, 1, 0)
+OrbitLabel.Position = UDim2.new(0, 10, 0, 0)
+OrbitLabel.BackgroundTransparency = 1
+OrbitLabel.Text = "Obirt (Click mục tiêu để xoay tốc độ cao)"
+OrbitLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+OrbitLabel.TextSize = 11
+OrbitLabel.Font = Enum.Font.GothamMedium
+OrbitLabel.TextXAlignment = Enum.TextXAlignment.Left
+OrbitLabel.Parent = OrbitContainer
+
+-- Nút gạt Toggle Switch cho Orbit
+local ToggleSwitch = Instance.new("TextButton")
+ToggleSwitch.Name = "ToggleSwitch"
+ToggleSwitch.Size = UDim2.new(0, 44, 0, 22)
+ToggleSwitch.AnchorPoint = Vector2.new(1, 0.5)
+ToggleSwitch.Position = UDim2.new(1, -10, 0.5, 0)
+ToggleSwitch.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+ToggleSwitch.Text = ""
+ToggleSwitch.Parent = OrbitContainer
+
+local SwitchCorner = Instance.new("UICorner")
+SwitchCorner.CornerRadius = UDim.new(1, 0)
+SwitchCorner.Parent = ToggleSwitch
+
+local ToggleCircle = Instance.new("Frame")
+ToggleCircle.Name = "ToggleCircle"
+ToggleCircle.Size = UDim2.new(0, 18, 0, 18)
+ToggleCircle.AnchorPoint = Vector2.new(0, 0.5)
+ToggleCircle.Position = UDim2.new(0, 2, 0.5, 0)
+ToggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+ToggleCircle.Parent = ToggleSwitch
+
+local CircleCorner = Instance.new("UICorner")
+CircleCorner.CornerRadius = UDim.new(1, 0)
+CircleCorner.Parent = ToggleCircle
+
+ToggleSwitch.MouseButton1Click:Connect(function()
+    isOrbiting = not isOrbiting
+    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    
+    if isOrbiting then
+        TweenService:Create(ToggleSwitch, tweenInfo, {BackgroundColor3 = Color3.fromRGB(0, 120, 255)}):Play()
+        TweenService:Create(ToggleCircle, tweenInfo, {Position = UDim2.new(1, -20, 0.5, 0)}):Play()
+    else
+        TweenService:Create(ToggleSwitch, tweenInfo, {BackgroundColor3 = Color3.fromRGB(40, 40, 50)}):Play()
+        TweenService:Create(ToggleCircle, tweenInfo, {Position = UDim2.new(0, 2, 0.5, 0)}):Play()
+        resetTarget()
+    end
+end)
+
+RunService.RenderStepped:Connect(function(dt)
+    if isOrbiting and currentTargetPart then
+        if not currentTargetPart:IsDescendantOf(Workspace) or (currentTargetHum and currentTargetHum.Health <= 0) then
+            resetTarget()
+            return
+        end
+        
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            orbitAngle = orbitAngle + dt * 1000000
+            local radius = 5
+            local offset = Vector3.new(math.cos(orbitAngle) * radius, 1.5, math.sin(orbitAngle) * radius)
+            char.HumanoidRootPart.CFrame = CFrame.new(currentTargetPart.Position + offset, currentTargetPart.Position)
+        end
+    end
+end)
+
+-- ========================================================
+-- TÍCH HỢP ESP PLAYER VÀO TRANG "EXPER"
+-- ========================================================
+local espEnabled = false
+local espHighlights = {}
+
+-- Khung chứa hàng Toggle ESP
+local EspContainer = Instance.new("Frame")
+EspContainer.Name = "EspContainer"
+EspContainer.Size = UDim2.new(1, 0, 0, 35)
+EspContainer.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+EspContainer.BackgroundTransparency = 0.5
+EspContainer.BorderSizePixel = 0
+EspContainer.Parent = pageExper
+
+local EspContainerCorner = Instance.new("UICorner")
+EspContainerCorner.CornerRadius = UDim.new(0, 6)
+EspContainerCorner.Parent = EspContainer
+
+local EspLabel = Instance.new("TextLabel")
+EspLabel.Size = UDim2.new(1, -60, 1, 0)
+EspLabel.Position = UDim2.new(0, 10, 0, 0)
+EspLabel.BackgroundTransparency = 1
+EspLabel.Text = "ESP Player (Highlight & Thông tin)"
+EspLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspLabel.TextSize = 11
+EspLabel.Font = Enum.Font.GothamMedium
+EspLabel.TextXAlignment = Enum.TextXAlignment.Left
+EspLabel.Parent = EspContainer
+
+-- Nút gạt Toggle Switch cho ESP
+local EspToggleSwitch = Instance.new("TextButton")
+EspToggleSwitch.Name = "EspToggleSwitch"
+EspToggleSwitch.Size = UDim2.new(0, 44, 0, 22)
+EspToggleSwitch.AnchorPoint = Vector2.new(1, 0.5)
+EspToggleSwitch.Position = UDim2.new(1, -10, 0.5, 0)
+EspToggleSwitch.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+EspToggleSwitch.Text = ""
+EspToggleSwitch.Parent = EspContainer
+
+local EspSwitchCorner = Instance.new("UICorner")
+EspSwitchCorner.CornerRadius = UDim.new(1, 0)
+EspSwitchCorner.Parent = EspToggleSwitch
+
+local EspToggleCircle = Instance.new("Frame")
+EspToggleCircle.Name = "EspToggleCircle"
+EspToggleCircle.Size = UDim2.new(0, 18, 0, 18)
+EspToggleCircle.AnchorPoint = Vector2.new(0, 0.5)
+EspToggleCircle.Position = UDim2.new(0, 2, 0.5, 0)
+EspToggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+EspToggleCircle.Parent = EspToggleSwitch
+
+local EspCircleCorner = Instance.new("UICorner")
+EspCircleCorner.CornerRadius = UDim.new(1, 0)
+EspCircleCorner.Parent = EspToggleCircle
+
+local function removeEsp(player)
+    if espHighlights[player] then
+        espHighlights[player]:Destroy()
+        espHighlights[player] = nil
+    end
+end
+
+local function addEsp(player)
+    if player == LocalPlayer then return end
+    
+    local function applyHighlight(char)
+        removeEsp(player)
+        if not espEnabled then return end
+        
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "BenemEspHighlight"
+        highlight.Adornee = char
+        highlight.FillColor = Color3.fromRGB(0, 150, 255)
+        highlight.FillTransparency = 0.5
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.OutlineTransparency = 0
+        highlight.Parent = char
+        
+        espHighlights[player] = highlight
+    end
+    
+    player.CharacterAdded:Connect(applyHighlight)
+    if player.Character then
+        applyHighlight(player.Character)
+    end
+end
+
+EspToggleSwitch.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    
+    if espEnabled then
+        TweenService:Create(EspToggleSwitch, tweenInfo, {BackgroundColor3 = Color3.fromRGB(0, 120, 255)}):Play()
+        TweenService:Create(EspToggleCircle, tweenInfo, {Position = UDim2.new(1, -20, 0.5, 0)}):Play()
+        for _, p in ipairs(Players:GetPlayers()) do
+            addEsp(p)
+        end
+    else
+        TweenService:Create(EspToggleSwitch, tweenInfo, {BackgroundColor3 = Color3.fromRGB(40, 40, 50)}):Play()
+        TweenService:Create(EspToggleCircle, tweenInfo, {Position = UDim2.new(0, 2, 0.5, 0)}):Play()
+        for p, _ in pairs(espHighlights) do
+            removeEsp(p)
+        end
+    end
+end)
+
+Players.PlayerAdded:Connect(function(player)
+    if espEnabled then
+        addEsp(player)
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    removeEsp(player)
+end)
+
+-- Mặc định mở trang OP strongest khi khởi động
+if Tabs["OP strongest"] then
+    Tabs["OP strongest"].BackgroundTransparency = 0.4
+    Tabs["OP strongest"].TextColor3 = Color3.fromRGB(255, 255, 255)
+    Pages["OP strongest"].Visible = true
+end
+
+-- 8. TOGGLE BUTTON (MOBILE)
+local ToggleBtnMobile = Instance.new("ImageButton")
+ToggleBtnMobile.Name = "BenemToggleButton"
+ToggleBtnMobile.Size = UDim2.new(0, 45, 0, 45)
+ToggleBtnMobile.Position = UDim2.new(0, 15, 0.3, 0)
+ToggleBtnMobile.BackgroundColor3 = Color3.fromRGB(15, 25, 35)
+ToggleBtnMobile.Image = "rbxthumb://type=Asset&id=93610124377677&w=150&h=150"
+ToggleBtnMobile.Visible = true
+ToggleBtnMobile.Parent = ScreenGui
+
+local MobileBtnCorner = Instance.new("UICorner")
+MobileBtnCorner.CornerRadius = UDim.new(1, 0)
+MobileBtnCorner.Parent = ToggleBtnMobile
+
+local MobileBtnStroke = Instance.new("UIStroke")
+MobileBtnStroke.Color = Color3.fromRGB(0, 150, 255)
+MobileBtnStroke.Thickness = 2
+MobileBtnStroke.Parent = ToggleBtnMobile
+
+ToggleBtnMobile.MouseButton1Click:Connect(function()
+    if not MainFrame.Visible then
+        MainFrame.Size = UDim2.new(0, 520, 0, 360)
+        MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+        MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+        ContainerHolder.Visible = true
+        BackgroundImage.Image = "rbxthumb://type=Asset&id=82939388625739&w=420&h=420"
+        BackgroundImage.Visible = true
+        MinimizeBtn.Text = "-"
+        PCIcon.Visible = true
+        PhoneIcon.Visible = true
+        TitleLabel.Visible = true
+        isMinimized = false
+    end
+    MainFrame.Visible = not MainFrame.Visible
+end)
